@@ -131,7 +131,7 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
       :attribute_names => SQS_ATTRIBUTES,
       # we will use the queue's setting, a good value is 10 seconds
       # (to ensure fast logstash shutdown on the one hand and few api calls on the other hand)
-      :wait_time_seconds => nil,
+      :wait_time_seconds => nil
     }
   end
 
