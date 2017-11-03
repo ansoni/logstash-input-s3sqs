@@ -6,6 +6,12 @@ require "logstash/timestamp"
 require "logstash/plugin_mixins/aws_config"
 require "logstash/errors"
 
+# Forcibly load all modules marked to be lazily loaded.
+#
+# It is recommended that this is called prior to launching threads. See
+# https://aws.amazon.com/blogs/developer/threading-with-the-aws-sdk-for-ruby/.
+Aws.eager_autoload!
+
 # Get logs from AWS s3 buckets as issued by an object-created event via sqs.
 #
 # This plugin is based on the logstash-input-sqs plugin but doesn't log the sqs event itself.
@@ -79,6 +85,9 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
   MAX_TIME_BEFORE_GIVING_UP = 60
   EVENT_SOURCE = 'aws:s3'
   EVENT_TYPE = 'ObjectCreated'
+  MAX_MESSAGES_TO_FETCH = 10 # Between 1-10 in the AWS-SDK doc
+  SENT_TIMESTAMP = "SentTimestamp"
+  SQS_ATTRIBUTES = [SENT_TIMESTAMP]
 
   config_name "sqs_s3"
 
@@ -86,6 +95,15 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
 
   # Name of the SQS Queue to pull messages from. Note that this is just the name of the queue, not the URL or ARN.
   config :queue, :validate => :string, :required => true
+
+  # Name of the event field in which to store the SQS message ID
+  config :id_field, :validate => :string
+
+  # Name of the event field in which to store the SQS message Sent Timestamp
+  config :sent_timestamp_field, :validate => :string
+
+  # Max messages to fetch, default is 10
+  config :max_messages_to_fetch, :validate => :number, :default => MAX_MESSAGES_TO_FETCH
 
   attr_reader :poller
   attr_reader :s3
@@ -108,10 +126,9 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
 
   def polling_options
     {
-      # we will query 1 message at a time, so we can ensure correct error handling if we can't download a single file correctly
-      # (we will throw :skip_delete if download size isn't correct to process the event again later
-      # -> set a reasonable "Default Visibility Timeout" for your queue, so that there's enough time to process the log files)
-      :max_number_of_messages => 1,
+      # the number of messages to fetch in a single api call
+      :max_number_of_messages => MAX_MESSAGES_TO_FETCH,
+      :attribute_names => SQS_ATTRIBUTES,
       # we will use the queue's setting, a good value is 10 seconds
       # (to ensure fast logstash shutdown on the one hand and few api calls on the other hand)
       :wait_time_seconds => nil,
@@ -161,6 +178,8 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
 
                   event.set('[@metadata][s3_bucket_name]', record['s3']['bucket']['name'])
                   event.set('[@metadata][s3_object_key]', record['s3']['object']['key'])
+		  event.set(@id_field, message.message_id) if @id_field
+		  event.set(@sent_timestamp_field, convert_epoch_to_timestamp(message.attributes[SENT_TIMESTAMP])) if @sent_timestamp_field
 
                   queue << event
                 end
@@ -191,8 +210,9 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
     end
     # poll a message and process it
     run_with_backoff do
-      poller.poll(polling_options) do |message|
-        handle_message(message, queue)
+      poller.poll(polling_options) do |messages|
+        messages.each do |message|
+          handle_message(message, queue)
       end
     end
   end
@@ -217,4 +237,7 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
     end
   end
 
+  def convert_epoch_to_timestamp(time)
+    LogStash::Timestamp.at(time.to_i / 1000)
+  end
 end # class
