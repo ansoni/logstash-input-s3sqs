@@ -5,6 +5,7 @@ require "logstash/namespace"
 require "logstash/timestamp"
 require "logstash/plugin_mixins/aws_config"
 require "logstash/errors"
+require "logstash/inputs/sqs_s3/patch"
 
 # Forcibly load all modules marked to be lazily loaded.
 #
