@@ -213,6 +213,7 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
       poller.poll(polling_options) do |messages|
         messages.each do |message|
           handle_message(message, queue)
+	end
       end
     end
   end
