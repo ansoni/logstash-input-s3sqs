@@ -1,3 +1,6 @@
+## 1.1.6
+- Added skip-delete parameter and receipt handle
+
 ## 1.1.0
 - Logstash 5 compatibility
 

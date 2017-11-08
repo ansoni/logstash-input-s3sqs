@@ -89,6 +89,7 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
   MAX_MESSAGES_TO_FETCH = 10 # Between 1-10 in the AWS-SDK doc
   SENT_TIMESTAMP = "SentTimestamp"
   SQS_ATTRIBUTES = [SENT_TIMESTAMP]
+  SKIP_DELETE = false
 
   config_name "sqs_s3"
 
@@ -97,8 +98,11 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
   # Name of the SQS Queue to pull messages from. Note that this is just the name of the queue, not the URL or ARN.
   config :queue, :validate => :string, :required => true
 
-  # Name of the event field in which to store the SQS message ID
-  config :id_field, :validate => :string
+  # Name of the event field in which to store the SQS Receipt Handle
+  config :receipt_handle, :validate => :string
+
+  # Name of the event field in which to store the SQS Message Id
+  config :message_id, :validate => :string
 
   # Name of the event field in which to store the SQS message Sent Timestamp
   config :sent_timestamp_field, :validate => :string
@@ -106,12 +110,16 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
   # Max messages to fetch, default is 10
   config :max_messages_to_fetch, :validate => :number, :default => MAX_MESSAGES_TO_FETCH
 
+  #If set to true, does NOT delete the message after polling
+  config :skip_delete, :validate => :string, :default => SKIP_DELETE 
+
   attr_reader :poller
   attr_reader :s3
 
   def register
     require "aws-sdk"
     @logger.info("Registering SQS input", :queue => @queue)
+    @logger.info("Skip Delete", :skip_delete => @skip_delete)
     setup_queue
   end
 
@@ -132,7 +140,8 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
       :attribute_names => SQS_ATTRIBUTES,
       # we will use the queue's setting, a good value is 10 seconds
       # (to ensure fast logstash shutdown on the one hand and few api calls on the other hand)
-      :wait_time_seconds => nil
+      :wait_time_seconds => nil,
+      :skip_delete => @skip_delete
     }
   end
 
@@ -179,7 +188,8 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
 
                   event.set('[@metadata][s3_bucket_name]', record['s3']['bucket']['name'])
                   event.set('[@metadata][s3_object_key]', record['s3']['object']['key'])
-		  event.set(@id_field, message.message_id) if @id_field
+		  event.set(@receipt_handle, message.receipt_handle) if @receipt_handle
+		  event.set(@message_id, message.message_id) if @message_id
 		  event.set(@sent_timestamp_field, convert_epoch_to_timestamp(message.attributes[SENT_TIMESTAMP])) if @sent_timestamp_field
 
                   queue << event
