@@ -1,3 +1,6 @@
+## 1.1.7
+- Added event type metadata to know when file is processed, and generate event with SQS message details
+
 ## 1.1.6
 - Added skip-delete parameter and receipt handle
 
