@@ -196,9 +196,10 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
 
 	      event = LogStash::Event.new()
               event.set('[@metadata][event_type]', 'complete')
-	      event.set(@receipt_handle, message.receipt_handle) if @receipt_handle
-              event.set(@message_id, message.message_id) if @message_id
-              event.set(@sent_timestamp_field, convert_epoch_to_timestamp(message.attributes[SENT_TIMESTAMP])) if @sent_timestamp_field
+	      event.set('[@metadata][' + @receipt_handle + ']', message.receipt_handle) if @receipt_handle
+              event.set('[@metadata][' + @message_id + ']', message.message_id) if @message_id
+	      event.set('[@metadata][s3_object_key]', record['s3']['object']['key'])
+              event.set('[@metadata][' + @sent_timestamp_field + ']', convert_epoch_to_timestamp(message.attributes[SENT_TIMESTAMP])) if @sent_timestamp_field
 
 	      queue << event
             rescue => e

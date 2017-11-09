@@ -1,3 +1,6 @@
+## 1.1.9
+- Added metadata keys to the event
+
 ## 1.1.8
 - Fixed event type metadata
 
