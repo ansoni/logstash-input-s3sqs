@@ -194,14 +194,13 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
                 end
               end
 
-	      @codec.decode(record) do |event|
-		event.set(@receipt_handle, message.receipt_handle) if @receipt_handle
-                event.set(@message_id, message.message_id) if @message_id
-                event.set(@sent_timestamp_field, convert_epoch_to_timestamp(message.attributes[SENT_TIMESTAMP])) if @sent_timestamp_field		
-		event.set('[@metadata][event_type]', 'complete')
+	      event = LogStash::Event.new()
+              event.set('[@metadata][event_type]', 'complete')
+	      event.set(@receipt_handle, message.receipt_handle) if @receipt_handle
+              event.set(@message_id, message.message_id) if @message_id
+              event.set(@sent_timestamp_field, convert_epoch_to_timestamp(message.attributes[SENT_TIMESTAMP])) if @sent_timestamp_field
 
-		queue << event
-	      end
+	      queue << event
             rescue => e
               @logger.warn("issuing :skip_delete on failed plain text processing", :bucket => record['s3']['bucket']['name'], :object => record['s3']['object']['key'], :error => e)
               throw :skip_delete
