@@ -110,8 +110,14 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
   # Max messages to fetch, default is 10
   config :max_messages_to_fetch, :validate => :number, :default => MAX_MESSAGES_TO_FETCH
 
-  #If set to true, does NOT delete the message after polling
+  # If set to true, does NOT delete the message after polling
   config :skip_delete, :validate => :string, :default => SKIP_DELETE 
+
+  # This is the max current load to support before throttling back (in Bytes)
+  config :max_load_before_throttling, :validate => :number, :default => 300000000
+
+  # Number of seconds to throttle back once max load has been met
+  config :seconds_to_throttle, :validate => :number, :default => 15
 
   attr_reader :poller
   attr_reader :s3
@@ -120,6 +126,7 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
     require "aws-sdk"
     @logger.info("Registering SQS input", :queue => @queue)
     @logger.info("Skip Delete", :skip_delete => @skip_delete)
+    @current_load = 0.0
     setup_queue
   end
 
@@ -181,6 +188,9 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
             end
             # process the plain text content
             begin
+	      # assess currently running load (in MB)
+              @current_load += (record['s3']['object']['size'].to_f / 1000000)
+
               lines = body.read.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: "\u2370").split(/\n/)
               lines.each do |line|
                 @codec.decode(line) do |event|
@@ -225,6 +235,25 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
         # this can take up to "Receive Message Wait Time" (of the sqs queue) seconds to be recognized
         throw :stop_polling
       end
+
+      # Throttle requests is overloaded by big files
+      if @current_load > @max_load_before_throttling/1000000 then
+        @logger.warn("**********Current load has exceeded " + (@max_load_before_throttling.to_f/1000000).to_s + " MB. Load is currently: " + @current_load.to_s + ". Throttling back by " + (@seconds_$
+
+        throttle_seconds_sleep = @seconds_to_throttle * (@current_load / (@max_load_before_throttling.to_f/1000000)).floor
+
+        if(throttle_seconds_sleep != 0) then
+          sleep(throttle_seconds_sleep)
+        end
+
+	# Cap the throttle time to 2 min
+        if(throttle_seconds_sleep > 120) then
+          sleep(120)
+        end
+      end
+
+      # Reset load to 0
+      @current_load = 0.0
     end
     # poll a message and process it
     run_with_backoff do

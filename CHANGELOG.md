@@ -1,3 +1,6 @@
+## 1.1.10
+- Added throttle capability to slow down processing based on file size
+
 ## 1.1.9
 - Added metadata keys to the event
 
