@@ -1,3 +1,6 @@
+## 1.1.13
+- Added support for processing plain text json by removing whitespaces first
+
 ## 1.1.12
 - Updated codec use based on content type and resolved compilation error
 

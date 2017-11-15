@@ -193,14 +193,23 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
 	      # assess currently running load (in MB)
               @current_load += (record['s3']['object']['size'].to_f / 1000000)
 
+	      lines = body.read.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: "\u2370")
+
 	      # Set the codec to json if required, otherwise the default is plain text
               if response.content_type == "application/json" then
                 @codec = @jsonCodec
+		
+		if response.content_encoding != "gzip" then
+		  # If it's json in plain text, need to remove whitespaces
+		  lines = lines.gsub(/\s+/, "").split(/\n/)
+		else
+		  lines = lines.split(/\n/)
+		end
               else
                 @codec = @plainCodec
+		lines = lines.split(/\n/)
               end
 
-              lines = body.read.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: "\u2370").split(/\n/)
               lines.each do |line|
                 @codec.decode(line) do |event|
                   decorate(event)
