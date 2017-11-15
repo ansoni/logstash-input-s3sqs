@@ -1,3 +1,6 @@
+## 1.1.11
+- Added content encoding and content type to events
+
 ## 1.1.10
 - Added throttle capability to slow down processing based on file size
 

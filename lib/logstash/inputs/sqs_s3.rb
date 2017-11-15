@@ -199,6 +199,8 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
                   event.set('[@metadata][s3_bucket_name]', record['s3']['bucket']['name'])
                   event.set('[@metadata][s3_object_key]', record['s3']['object']['key'])
 		  event.set('[@metadata][event_type]', 's3')
+		  event.set('[@metadata][s3_object_encoding]', response.content_encoding)
+                  event.set('[@metadata][s3_object_type]', response.content_type)
 
                   queue << event
                 end
