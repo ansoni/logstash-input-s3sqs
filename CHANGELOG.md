@@ -1,3 +1,6 @@
+## 1.1.14
+- Fixed compilation error
+
 ## 1.1.13
 - Added support for processing plain text json by removing whitespaces first
 
