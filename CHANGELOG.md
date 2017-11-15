@@ -1,3 +1,6 @@
+## 1.1.12
+- Updated codec use based on content type and resolved compilation error
+
 ## 1.1.11
 - Added content encoding and content type to events
 

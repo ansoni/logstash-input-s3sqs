@@ -127,6 +127,8 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
     @logger.info("Registering SQS input", :queue => @queue)
     @logger.info("Skip Delete", :skip_delete => @skip_delete)
     @current_load = 0.0
+    @jsonCodec = LogStash::Codecs::JSON.new
+    @plainCodec = LogStash::Codecs::Plain.new
     setup_queue
   end
 
@@ -191,6 +193,13 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
 	      # assess currently running load (in MB)
               @current_load += (record['s3']['object']['size'].to_f / 1000000)
 
+	      # Set the codec to json if required, otherwise the default is plain text
+              if response.content_type == "application/json" then
+                @codec = @jsonCodec
+              else
+                @codec = @plainCodec
+              end
+
               lines = body.read.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: "\u2370").split(/\n/)
               lines.each do |line|
                 @codec.decode(line) do |event|
@@ -240,9 +249,8 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
 
       # Throttle requests is overloaded by big files
       if @current_load > @max_load_before_throttling/1000000 then
-        @logger.warn("**********Current load has exceeded " + (@max_load_before_throttling.to_f/1000000).to_s + " MB. Load is currently: " + @current_load.to_s + ". Throttling back by " + (@seconds_$
-
-        throttle_seconds_sleep = @seconds_to_throttle * (@current_load / (@max_load_before_throttling.to_f/1000000)).floor
+	throttle_seconds_sleep = @seconds_to_throttle * (@current_load / (@max_load_before_throttling.to_f/1000000)).floor
+        @logger.warn("**********Current load has exceeded " + (@max_load_before_throttling.to_f/1000000).to_s + " MB. Load is currently: " + @current_load.to_s + ". Throttling back by " + throttle_seconds_sleep
 
         if(throttle_seconds_sleep != 0) then
           sleep(throttle_seconds_sleep)
