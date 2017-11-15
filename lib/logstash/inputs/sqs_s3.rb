@@ -259,7 +259,7 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
       # Throttle requests is overloaded by big files
       if @current_load > @max_load_before_throttling/1000000 then
 	throttle_seconds_sleep = @seconds_to_throttle * (@current_load / (@max_load_before_throttling.to_f/1000000)).floor
-        @logger.warn("**********Current load has exceeded " + (@max_load_before_throttling.to_f/1000000).to_s + " MB. Load is currently: " + @current_load.to_s + ". Throttling back by " + throttle_seconds_sleep
+        @logger.warn("**********Current load has exceeded " + (@max_load_before_throttling.to_f/1000000).to_s + " MB. Load is currently: " + @current_load.to_s + ". Throttling back by " + throttle_seconds_sleep)
 
         if(throttle_seconds_sleep != 0) then
           sleep(throttle_seconds_sleep)
