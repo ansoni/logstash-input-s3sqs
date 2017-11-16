@@ -1,3 +1,6 @@
+## 1.1.15
+- Fixed throttle error
+
 ## 1.1.14
 - Fixed compilation error
 

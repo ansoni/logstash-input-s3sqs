@@ -193,7 +193,7 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
 	      # assess currently running load (in MB)
               @current_load += (record['s3']['object']['size'].to_f / 1000000)
 
-	      lines = body.read.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: "\u2370")
+	      lines = body.read.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: "\u2370").split(/\n/)
 
 	      # Set the codec to json if required, otherwise the default is plain text
               if response.content_type == "application/json" then
@@ -201,13 +201,11 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
 		
 		if response.content_encoding != "gzip" then
 		  # If it's json in plain text, need to remove whitespaces
-		  lines = lines.gsub(/\s+/, "").split(/\n/)
-		else
-		  lines = lines.split(/\n/)
+		  # TODO...
 		end
               else
                 @codec = @plainCodec
-		lines = lines.split(/\n/)
+		#lines = lines.split(/\n/)
               end
 
               lines.each do |line|
@@ -259,15 +257,15 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
       # Throttle requests is overloaded by big files
       if @current_load > @max_load_before_throttling/1000000 then
 	throttle_seconds_sleep = @seconds_to_throttle * (@current_load / (@max_load_before_throttling.to_f/1000000)).floor
-        @logger.warn("**********Current load has exceeded " + (@max_load_before_throttling.to_f/1000000).to_s + " MB. Load is currently: " + @current_load.to_s + ". Throttling back by " + throttle_seconds_sleep)
+        @logger.warn("**********Current load has exceeded " + (@max_load_before_throttling.to_f/1000000).to_s + " MB. Load is currently: " + @current_load.to_s + ". Throttling back by " + throttle_seconds_sleep.to_s)
 
+	# Cap the throttle time to 1 min
         if(throttle_seconds_sleep != 0) then
-          sleep(throttle_seconds_sleep)
-        end
-
-	# Cap the throttle time to 2 min
-        if(throttle_seconds_sleep > 120) then
-          sleep(120)
+	  if(throttle_seconds_sleep > 60) then
+            sleep(60)
+	  else
+	    sleep(throttle_seconds_sleep)
+          end
         end
       end
 
