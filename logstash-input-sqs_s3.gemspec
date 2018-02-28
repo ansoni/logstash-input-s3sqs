@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name            = 'logstash-input-sqs_s3'
-  s.version         = '1.1.15'
+  s.version         = '1.1.16'
   s.licenses        = ['Apache License (2.0)']
   s.summary         = "Get logs from AWS s3 buckets as issued by an object-created event via sqs."
   s.description     = "This gem is a logstash plugin required to be installed on top of the Logstash core pipeline using $LS_HOME/bin/plugin install gemname. This gem is not a stand-alone program. Full credit goes to Heiko Finzel. Republishing this gem to support Logstash 5."
@@ -21,6 +21,7 @@ Gem::Specification.new do |s|
   # Gem dependencies
   s.add_runtime_dependency "logstash-core-plugin-api", ">= 1.60", "<= 2.99"
 
+  s.add_dependency "multiple_files_gzip_reader"
   s.add_runtime_dependency 'logstash-codec-json'
   s.add_runtime_dependency "logstash-mixin-aws", ">= 1.0.0"
 

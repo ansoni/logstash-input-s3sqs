@@ -1,3 +1,6 @@
+## 1.1.16
+- Fixed not being able to read multiple gzipped file streams in a single file issue
+
 ## 1.1.15
 - Fixed throttle error
 
