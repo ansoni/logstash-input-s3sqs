@@ -1,3 +1,6 @@
+## 1.1.17
+- Updated comments and removed print
+
 ## 1.1.16
 - Fixed not being able to read multiple gzipped file streams in a single file issue
 
