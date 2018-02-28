@@ -182,7 +182,7 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
             # if necessary unzip. Note: Firehose is automatically gzipped but does NOT include the content encoding or the extension.
             if response.content_encoding == "gzip" or record['s3']['object']['key'].end_with?(".gz") or record['s3']['object']['key'].include?("/firehose/") then
               begin
-		            temp = MultipleFilesGzipReader.new(body)
+	        temp = MultipleFilesGzipReader.new(body)
               rescue => e
                 @logger.warn("content is marked to be gzipped but can't unzip it, assuming plain text", :bucket => record['s3']['bucket']['name'], :object => record['s3']['object']['key'], :error => e)
                 temp = body
@@ -196,9 +196,8 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
 
 	      lines = body.read.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: "\u2370").split(/\n/)
 
-	      # Set the codec to json if required, otherwise the default is plain text
+	      # Set the codec to json if required, otherwise the default is plain text. Firehose is always in JSON format
               if response.content_type == "application/json" or record['s3']['object']['key'].include?("/firehose/") then
-		p "its firehose!!!"
                 @codec = @jsonCodec
 		
 		if response.content_encoding != "gzip" then
