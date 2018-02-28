@@ -10,6 +10,7 @@ gem install logstash-devutils
 gem install logstash-core-plugin-api
 gem install logstash-codec-json
 gem install logstash-mixin-aws
+gem install multiple_files_gzip_reader
 bundler install
 bundle exec rake vendor
 # skip "bundle exec rspec" ... TODO: find a sane howto about how rspec works
