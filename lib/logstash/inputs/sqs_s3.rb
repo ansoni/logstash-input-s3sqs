@@ -194,7 +194,11 @@ class LogStash::Inputs::SQSS3 < LogStash::Inputs::Threadable
 	      # assess currently running load (in MB)
               @current_load += (record['s3']['object']['size'].to_f / 1000000)
 
-	      lines = body.read.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: "\u2370").split(/\n/)
+	      if record['s3']['object']['key'].include?("/firehose/") then
+                 lines = body.read.encode('UTF-8', 'binary').gsub("}{", "}\n{").split(/\n/)
+              else
+                 lines = body.read.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: "\u2370").split(/\n/)
+              end
 
 	      # Set the codec to json if required, otherwise the default is plain text. Firehose is always in JSON format
               if response.content_type == "application/json" or record['s3']['object']['key'].include?("/firehose/") then

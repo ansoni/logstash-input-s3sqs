@@ -1,3 +1,6 @@
+## 1.1.18
+- Updated firehose handling for streamed gzip files
+
 ## 1.1.17
 - Updated comments and removed print
 
